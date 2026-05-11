@@ -1,0 +1,1855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Physics Mechanics — Study App</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,400&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f0e8;
+  --bg2: #ede7d9;
+  --ink: #1a1208;
+  --ink2: #4a3f2f;
+  --muted: #8a7a68;
+  --paper: #faf7f2;
+  --u1: #c84b2f;
+  --u2: #2d6a4f;
+  --u3: #1d4e89;
+  --gold: #c9a84c;
+  --border: rgba(26,18,8,0.12);
+  --shadow: 0 4px 24px rgba(26,18,8,0.10);
+  --radius: 16px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Outfit', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Grain texture */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.5;
+}
+
+/* ===== NAVIGATION ===== */
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: rgba(245,240,232,0.92);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-brand {
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-brand span {
+  background: var(--ink);
+  color: var(--bg);
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem;
+  font-family: 'DM Mono', monospace;
+}
+
+.nav-tabs {
+  display: flex;
+  gap: 0.25rem;
+  background: var(--bg2);
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.nav-tab {
+  padding: 0.4rem 1rem;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.nav-tab.active {
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 1px 4px rgba(26,18,8,0.1);
+}
+
+.nav-tab:hover:not(.active) { color: var(--ink2); }
+
+.nav-progress {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.xp-badge {
+  background: var(--gold);
+  color: var(--ink);
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 99px;
+  font-size: 0.7rem;
+}
+
+/* ===== MAIN LAYOUT ===== */
+.app {
+  margin-top: 64px;
+  min-height: calc(100vh - 64px);
+}
+
+.screen { display: none; }
+.screen.active { display: block; animation: fadeIn 0.35s ease; }
+
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+/* ===== HOME SCREEN ===== */
+.home {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+}
+
+.home-hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 3rem;
+  align-items: center;
+}
+
+.home-title {
+  font-family: 'Fraunces', serif;
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--ink);
+}
+
+.home-title em {
+  font-style: italic;
+  color: var(--u1);
+}
+
+.home-desc {
+  color: var(--ink2);
+  line-height: 1.7;
+  margin-top: 1rem;
+  font-size: 0.95rem;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2,1fr);
+  gap: 1rem;
+}
+
+.stat-card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.stat-num {
+  font-family: 'Fraunces', serif;
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--ink);
+  display: block;
+}
+
+.stat-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-top: 0.2rem;
+}
+
+.units-grid {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+}
+
+.unit-card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.22s;
+  position: relative;
+  overflow: hidden;
+}
+
+.unit-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+}
+
+.unit-card.u1::before { background: var(--u1); }
+.unit-card.u2::before { background: var(--u2); }
+.unit-card.u3::before { background: var(--u3); }
+
+.unit-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+  border-color: transparent;
+}
+
+.unit-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.unit-card.u1 .unit-num { color: var(--u1); }
+.unit-card.u2 .unit-num { color: var(--u2); }
+.unit-card.u3 .unit-num { color: var(--u3); }
+
+.unit-name {
+  font-family: 'Fraunces', serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  line-height: 1.25;
+}
+
+.unit-topics {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.unit-bar-wrap {
+  margin-top: 1rem;
+  height: 4px;
+  background: var(--bg2);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.unit-bar {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.6s ease;
+}
+
+.unit-card.u1 .unit-bar { background: var(--u1); }
+.unit-card.u2 .unit-bar { background: var(--u2); }
+.unit-card.u3 .unit-bar { background: var(--u3); }
+
+/* ===== LESSONS SCREEN ===== */
+.lessons-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  height: calc(100vh - 64px);
+}
+
+.lessons-sidebar {
+  background: var(--paper);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 1.5rem 0;
+}
+
+.sidebar-section {
+  padding: 0 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.sidebar-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+  padding: 0 0.5rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sidebar-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.lesson-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: 0.2rem;
+}
+
+.lesson-item:hover { background: var(--bg); }
+.lesson-item.active { background: var(--ink); color: var(--bg); }
+.lesson-item.active .lesson-meta { color: rgba(245,240,232,0.5); }
+
+.lesson-dot {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.6rem;
+  font-family: 'DM Mono', monospace;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: all 0.15s;
+}
+
+.lesson-item.done .lesson-dot { background: var(--u2); border-color: var(--u2); color: white; }
+.lesson-item.active .lesson-dot { background: var(--bg); border-color: var(--bg); color: var(--ink); }
+
+.lesson-info { flex: 1; min-width: 0; }
+
+.lesson-title-sm {
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.lesson-meta {
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-top: 0.15rem;
+  font-family: 'DM Mono', monospace;
+}
+
+/* Lesson content */
+.lesson-content {
+  overflow-y: auto;
+  padding: 3rem;
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.lesson-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.lesson-unit-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 0.75rem;
+}
+
+.tag-u1 { background: rgba(200,75,47,0.1); color: var(--u1); }
+.tag-u2 { background: rgba(45,106,79,0.1); color: var(--u2); }
+.tag-u3 { background: rgba(29,78,137,0.1); color: var(--u3); }
+
+.lesson-title-lg {
+  font-family: 'Fraunces', serif;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.lesson-body { font-size: 0.95rem; line-height: 1.8; color: var(--ink2); }
+.lesson-body h3 {
+  font-family: 'Fraunces', serif;
+  font-size: 1.2rem;
+  color: var(--ink);
+  margin: 1.75rem 0 0.6rem;
+}
+
+.lesson-body p { margin-bottom: 1rem; }
+
+.callout {
+  background: var(--bg2);
+  border-left: 3px solid var(--gold);
+  border-radius: 0 10px 10px 0;
+  padding: 1rem 1.25rem;
+  margin: 1.25rem 0;
+  font-size: 0.88rem;
+}
+
+.callout.danger { border-color: var(--u1); background: rgba(200,75,47,0.06); }
+.callout.tip { border-color: var(--u2); background: rgba(45,106,79,0.06); }
+.callout.info { border-color: var(--u3); background: rgba(29,78,137,0.06); }
+
+.formula-box {
+  background: var(--ink);
+  color: var(--bg);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin: 1.25rem 0;
+  font-family: 'DM Mono', monospace;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.formula-box .formula-label {
+  font-size: 0.65rem;
+  opacity: 0.5;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.def-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25rem 0;
+  font-size: 0.85rem;
+}
+
+.def-table th {
+  background: var(--bg2);
+  padding: 0.6rem 0.9rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.def-table td {
+  padding: 0.65rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+.def-table tr:last-child td { border-bottom: none; }
+
+.def-table .term {
+  font-weight: 600;
+  color: var(--ink);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.lesson-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.btn {
+  padding: 0.7rem 1.4rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.btn:hover { background: var(--bg2); }
+.btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.btn.primary:hover { opacity: 0.85; }
+.btn:disabled { opacity: 0.4; cursor: default; }
+
+/* ===== FLASHCARDS ===== */
+.flash-screen {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+}
+
+.flash-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2.5rem;
+}
+
+.flash-title {
+  font-family: 'Fraunces', serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.flash-counter {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.flash-filter {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 0.35rem 0.85rem;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: transparent;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.75rem;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.filter-btn.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+.card-scene {
+  perspective: 1000px;
+  height: 280px;
+  margin-bottom: 2rem;
+}
+
+.flash-card {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.flash-card.flipped { transform: rotateY(180deg); }
+
+.card-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+}
+
+.card-front {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.card-back {
+  background: var(--ink);
+  color: var(--bg);
+  transform: rotateY(180deg);
+}
+
+.card-hint {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin-bottom: 1rem;
+}
+
+.card-back .card-hint { color: rgba(245,240,232,0.4); }
+
+.card-q {
+  font-family: 'Fraunces', serif;
+  font-size: 1.3rem;
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.card-back .card-q {
+  font-family: 'DM Mono', monospace;
+  font-style: normal;
+  font-size: 1rem;
+  color: var(--bg);
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.card-unit-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-bottom: 0.75rem;
+}
+
+.flash-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.flash-btn {
+  flex: 1;
+  max-width: 160px;
+  padding: 0.8rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.flash-btn.again { background: rgba(200,75,47,0.08); color: var(--u1); border-color: rgba(200,75,47,0.2); }
+.flash-btn.again:hover { background: rgba(200,75,47,0.15); }
+.flash-btn.good { background: rgba(45,106,79,0.08); color: var(--u2); border-color: rgba(45,106,79,0.2); }
+.flash-btn.good:hover { background: rgba(45,106,79,0.15); }
+
+.flash-progress-row {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.fp-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  transition: all 0.3s;
+}
+
+.fp-dot.known { background: var(--u2); border-color: var(--u2); }
+.fp-dot.again { background: var(--u1); border-color: var(--u1); }
+.fp-dot.current { background: var(--gold); border-color: var(--gold); }
+
+/* ===== QUIZ SCREEN ===== */
+.quiz-screen {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+}
+
+.quiz-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.quiz-title { font-family: 'Fraunces', serif; font-size: 1.6rem; font-weight: 700; }
+
+.quiz-timer {
+  font-family: 'DM Mono', monospace;
+  font-size: 1.1rem;
+  color: var(--gold);
+  background: var(--paper);
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.9rem;
+  border-radius: 8px;
+}
+
+.quiz-progress-bar {
+  height: 5px;
+  background: var(--bg2);
+  border-radius: 99px;
+  margin-bottom: 2rem;
+  overflow: hidden;
+}
+
+.quiz-progress-fill {
+  height: 100%;
+  background: var(--gold);
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
+.qcard {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow);
+}
+
+.qcard-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.75rem;
+}
+
+.qcard-q {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.55;
+  margin-bottom: 1.25rem;
+  color: var(--ink);
+}
+
+.q-opts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.q-opt {
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.16s;
+  text-align: left;
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  line-height: 1.4;
+  color: var(--ink2);
+}
+
+.q-opt:hover:not(:disabled) {
+  border-color: var(--gold);
+  background: rgba(201,168,76,0.06);
+  color: var(--ink);
+}
+
+.q-opt.correct { background: rgba(45,106,79,0.1); border-color: var(--u2); color: var(--u2); }
+.q-opt.wrong { background: rgba(200,75,47,0.08); border-color: var(--u1); color: var(--u1); }
+.q-opt.reveal { background: rgba(45,106,79,0.06); border-color: rgba(45,106,79,0.3); color: var(--u2); opacity:0.75; }
+.q-opt:disabled { cursor: default; }
+
+.opt-letter {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  background: var(--bg2);
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.q-feedback {
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-family: 'DM Mono', monospace;
+  display: none;
+}
+
+.q-feedback.show { display: block; animation: fadeIn 0.2s ease; }
+.q-feedback.ok { background: rgba(45,106,79,0.08); color: var(--u2); }
+.q-feedback.err { background: rgba(200,75,47,0.08); color: var(--u1); }
+
+.quiz-result {
+  display: none;
+  text-align: center;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 3rem 2rem;
+  box-shadow: var(--shadow);
+}
+
+.quiz-result.show { display: block; animation: fadeIn 0.4s ease; }
+.quiz-result-emoji { font-size: 3.5rem; display: block; margin-bottom: 1rem; }
+.quiz-result-title { font-family: 'Fraunces', serif; font-size: 2rem; margin-bottom: 0.5rem; }
+.quiz-result-score { font-family: 'Fraunces', serif; font-size: 3rem; font-weight: 700; color: var(--u3); margin: 0.5rem 0; display: block; }
+.quiz-result-sub { color: var(--muted); font-size: 0.88rem; margin-bottom: 2rem; }
+
+.result-stats {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.rstat-num { font-family: 'Fraunces', serif; font-size: 1.8rem; display: block; }
+.rstat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+
+/* ===== PROGRESS ===== */
+.progress-screen {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+}
+
+.progress-title {
+  font-family: 'Fraunces', serif;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 2.5rem;
+}
+
+.prog-grid {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+}
+
+.prog-card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+.prog-card-title {
+  font-family: 'Fraunces', serif;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.prog-ring-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.prog-ring {
+  position: relative;
+  width: 90px; height: 90px;
+}
+
+.prog-ring svg { transform: rotate(-90deg); }
+.prog-ring-bg { fill: none; stroke: var(--bg2); stroke-width: 8; }
+.prog-ring-fill { fill: none; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+.prog-ring-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Fraunces', serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.prog-detail {
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+.prog-detail span {
+  float: right;
+  font-family: 'DM Mono', monospace;
+  color: var(--ink2);
+}
+
+.prog-activity {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.prog-activity h3 {
+  font-family: 'Fraunces', serif;
+  font-size: 1.1rem;
+  margin-bottom: 1.25rem;
+}
+
+.activity-log {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.act-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.82rem;
+}
+
+.act-icon {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.act-icon.lesson { background: rgba(29,78,137,0.1); }
+.act-icon.flash { background: rgba(201,168,76,0.12); }
+.act-icon.quiz { background: rgba(200,75,47,0.08); }
+
+.act-text { flex: 1; color: var(--ink2); }
+.act-time { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--muted); }
+
+.mastery-section {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+.mastery-section h3 {
+  font-family: 'Fraunces', serif;
+  font-size: 1.1rem;
+  margin-bottom: 1.25rem;
+}
+
+.mastery-topic {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.7rem;
+}
+
+.mastery-label { font-size: 0.8rem; color: var(--ink2); flex: 1; }
+.mastery-bar-wrap { width: 160px; height: 6px; background: var(--bg2); border-radius: 99px; overflow: hidden; }
+.mastery-bar { height: 100%; border-radius: 99px; transition: width 1s ease; }
+.mastery-pct { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--muted); width: 36px; text-align: right; }
+
+@media (max-width: 768px) {
+  .home-hero { grid-template-columns: 1fr; }
+  .units-grid, .prog-grid { grid-template-columns: 1fr; }
+  .lessons-layout { grid-template-columns: 1fr; }
+  .lessons-sidebar { display: none; }
+  .q-opts { grid-template-columns: 1fr; }
+  .nav-tabs .nav-tab:not(.active) span { display: none; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">
+    <span>Φ</span> Mechanics
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="goto('home')">🏠 Home</button>
+    <button class="nav-tab" onclick="goto('lessons')">📖 Lessons</button>
+    <button class="nav-tab" onclick="goto('flash')">🃏 Flashcards</button>
+    <button class="nav-tab" onclick="goto('quiz')">✏️ Quiz</button>
+    <button class="nav-tab" onclick="goto('progress')">📊 Progress</button>
+  </div>
+  <div class="nav-progress">
+    <span class="xp-badge" id="xpBadge">0 XP</span>
+    <span id="navStreak">🔥 0</span>
+  </div>
+</nav>
+
+<!-- ===== HOME ===== -->
+<div class="screen active" id="screen-home">
+<div class="home">
+  <div class="home-hero">
+    <div>
+      <div class="home-title">Physics<br><em>Mechanics</em><br>Study App</div>
+      <p class="home-desc">Master kinematics, motion graphs, and equations of motion through structured lessons, flashcards, and quizzes — drawn directly from your class notes.</p>
+      <button class="btn primary" style="margin-top:1.5rem" onclick="goto('lessons')">Start Learning →</button>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <span class="stat-num" id="homeLessons">0/10</span>
+        <span class="stat-label">Lessons Done</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num" id="homeFlash">0</span>
+        <span class="stat-label">Cards Reviewed</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num" id="homeQuiz">0%</span>
+        <span class="stat-label">Quiz Best</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num" id="homeXP">0</span>
+        <span class="stat-label">XP Earned</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="units-grid">
+    <div class="unit-card u1" onclick="goto('lessons',0)">
+      <div class="unit-num">Unit 1</div>
+      <div class="unit-name">Describing Motion</div>
+      <div class="unit-topics">Kinematics · Scalars & Vectors · Position · Velocity · Acceleration · Trajectories</div>
+      <div class="unit-bar-wrap"><div class="unit-bar" id="bar1" style="width:0%"></div></div>
+    </div>
+    <div class="unit-card u2" onclick="goto('lessons',4)">
+      <div class="unit-num">Unit 2</div>
+      <div class="unit-name">Motion Graphs</div>
+      <div class="unit-topics">Distance-Time · Velocity-Time · Acceleration-Time · Gradients · Areas</div>
+      <div class="unit-bar-wrap"><div class="unit-bar" id="bar2" style="width:0%"></div></div>
+    </div>
+    <div class="unit-card u3" onclick="goto('lessons',7)">
+      <div class="unit-num">Unit 3</div>
+      <div class="unit-name">Equations of Motion</div>
+      <div class="unit-topics">URM · UVRM · v = at+v₀ · x = ½at²+v₀t+x₀ · v²−v₀²=2a(x−x₀)</div>
+      <div class="unit-bar-wrap"><div class="unit-bar" id="bar3" style="width:0%"></div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ===== LESSONS ===== -->
+<div class="screen" id="screen-lessons">
+<div class="lessons-layout">
+  <div class="lessons-sidebar" id="lessonSidebar"></div>
+  <div style="overflow-y:auto; flex:1;">
+    <div class="lesson-content" id="lessonContent"></div>
+  </div>
+</div>
+</div>
+
+<!-- ===== FLASHCARDS ===== -->
+<div class="screen" id="screen-flash">
+<div class="flash-screen">
+  <div class="flash-header">
+    <div class="flash-title">Flashcards</div>
+    <div class="flash-counter" id="flashCounter">Card 1 of 30</div>
+  </div>
+  <div class="flash-filter">
+    <button class="filter-btn on" onclick="setFlashFilter('all',this)">All Units</button>
+    <button class="filter-btn" onclick="setFlashFilter(1,this)">Unit 1</button>
+    <button class="filter-btn" onclick="setFlashFilter(2,this)">Unit 2</button>
+    <button class="filter-btn" onclick="setFlashFilter(3,this)">Unit 3</button>
+  </div>
+  <div class="card-scene">
+    <div class="flash-card" id="flashCard" onclick="flipCard()">
+      <div class="card-face card-front">
+        <div class="card-unit-dot" id="cardDot"></div>
+        <div class="card-hint">Click to reveal answer</div>
+        <div class="card-q" id="cardQuestion">—</div>
+      </div>
+      <div class="card-face card-back">
+        <div class="card-hint">Answer</div>
+        <div class="card-q" id="cardAnswer">—</div>
+      </div>
+    </div>
+  </div>
+  <div class="flash-actions" id="flashActions" style="display:none">
+    <button class="flash-btn again" onclick="rateCard('again')">✗ Again</button>
+    <button class="flash-btn good" onclick="rateCard('known')">✓ Got it</button>
+  </div>
+  <div class="flash-actions" id="flashFlipHint">
+    <button class="flash-btn good" style="max-width:none;flex:1" onclick="flipCard()">👆 Tap card to flip</button>
+  </div>
+  <div class="flash-progress-row" id="flashDots"></div>
+</div>
+</div>
+
+<!-- ===== QUIZ ===== -->
+<div class="screen" id="screen-quiz">
+<div class="quiz-screen">
+  <div class="quiz-header">
+    <div class="quiz-title">Quick Quiz</div>
+    <div class="quiz-timer" id="quizTimer">00:00</div>
+  </div>
+  <div class="quiz-progress-bar"><div class="quiz-progress-fill" id="quizFill"></div></div>
+  <div id="quizBody"></div>
+  <div class="quiz-result" id="quizResult">
+    <span class="quiz-result-emoji" id="qrEmoji">🎓</span>
+    <div class="quiz-result-title" id="qrTitle">Quiz Done!</div>
+    <span class="quiz-result-score" id="qrScore">0%</span>
+    <div class="quiz-result-sub" id="qrSub">Keep studying!</div>
+    <div class="result-stats">
+      <div><span class="rstat-num" id="qrCorrect" style="color:var(--u2)">0</span><span class="rstat-label">Correct</span></div>
+      <div><span class="rstat-num" id="qrWrong" style="color:var(--u1)">0</span><span class="rstat-label">Wrong</span></div>
+      <div><span class="rstat-num" id="qrTime" style="color:var(--gold)">0:00</span><span class="rstat-label">Time</span></div>
+    </div>
+    <button class="btn primary" onclick="restartQuiz()">↺ Try Again</button>
+  </div>
+  <div style="text-align:center;margin-top:1.5rem" id="quizSubmitWrap">
+    <button class="btn primary" onclick="showQuizResult()">Submit Quiz →</button>
+  </div>
+</div>
+</div>
+
+<!-- ===== PROGRESS ===== -->
+<div class="screen" id="screen-progress">
+<div class="progress-screen">
+  <div class="progress-title">Your Progress</div>
+  <div class="prog-grid">
+    <div class="prog-card">
+      <div class="prog-card-title"><span style="color:var(--u1)">●</span> Unit 1 — Describing Motion</div>
+      <div class="prog-ring-wrap">
+        <div class="prog-ring">
+          <svg viewBox="0 0 90 90" width="90" height="90">
+            <circle class="prog-ring-bg" cx="45" cy="45" r="37"/>
+            <circle class="prog-ring-fill" id="ring1" cx="45" cy="45" r="37" stroke="var(--u1)" stroke-dasharray="232" stroke-dashoffset="232"/>
+          </svg>
+          <div class="prog-ring-label" id="ring1pct">0%</div>
+        </div>
+      </div>
+      <div class="prog-detail">
+        Lessons <span id="pd1l">0/4</span><br>
+        Cards reviewed <span id="pd1c">0</span><br>
+        Quiz avg <span id="pd1q">—</span>
+      </div>
+    </div>
+    <div class="prog-card">
+      <div class="prog-card-title"><span style="color:var(--u2)">●</span> Unit 2 — Motion Graphs</div>
+      <div class="prog-ring-wrap">
+        <div class="prog-ring">
+          <svg viewBox="0 0 90 90" width="90" height="90">
+            <circle class="prog-ring-bg" cx="45" cy="45" r="37"/>
+            <circle class="prog-ring-fill" id="ring2" cx="45" cy="45" r="37" stroke="var(--u2)" stroke-dasharray="232" stroke-dashoffset="232"/>
+          </svg>
+          <div class="prog-ring-label" id="ring2pct">0%</div>
+        </div>
+      </div>
+      <div class="prog-detail">
+        Lessons <span id="pd2l">0/3</span><br>
+        Cards reviewed <span id="pd2c">0</span><br>
+        Quiz avg <span id="pd2q">—</span>
+      </div>
+    </div>
+    <div class="prog-card">
+      <div class="prog-card-title"><span style="color:var(--u3)">●</span> Unit 3 — Equations of Motion</div>
+      <div class="prog-ring-wrap">
+        <div class="prog-ring">
+          <svg viewBox="0 0 90 90" width="90" height="90">
+            <circle class="prog-ring-bg" cx="45" cy="45" r="37"/>
+            <circle class="prog-ring-fill" id="ring3" cx="45" cy="45" r="37" stroke="var(--u3)" stroke-dasharray="232" stroke-dashoffset="232"/>
+          </svg>
+          <div class="prog-ring-label" id="ring3pct">0%</div>
+        </div>
+      </div>
+      <div class="prog-detail">
+        Lessons <span id="pd3l">0/3</span><br>
+        Cards reviewed <span id="pd3c">0</span><br>
+        Quiz avg <span id="pd3q">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="prog-activity">
+    <h3>Recent Activity</h3>
+    <div class="activity-log" id="activityLog">
+      <div style="color:var(--muted);font-size:0.82rem">No activity yet — start learning!</div>
+    </div>
+  </div>
+
+  <div class="mastery-section">
+    <h3>Topic Mastery</h3>
+    <div id="masteryList"></div>
+  </div>
+</div>
+</div>
+
+<script>
+// ===================== DATA =====================
+
+const lessons = [
+  // UNIT 1
+  { unit:1, title:"What is Mechanics?", mins:5, content:`
+    <div class="lesson-unit-tag tag-u1">Unit 1</div>
+    <div class="lesson-title-lg">What is Mechanics?</div>
+    <div class="lesson-body">
+      <p><strong>Mechanics</strong> is a branch of physics that studies the motion of bodies and the forces acting upon them. It requires precise definitions of quantities such as displacement, time, velocity, acceleration, mass, and force.</p>
+      <div class="callout tip">⚡ <strong>Kinematics</strong> is the study of motion <em>independent</em> of the causes that produce it. We describe <em>how</em> things move, not <em>why</em>.</div>
+      <h3>Key Concept: Relative Motion</h3>
+      <p>The state of motion or rest of a body is <strong>relative</strong>. A passenger in a vehicle is at rest relative to their neighbour, but in motion relative to an observer standing by the road.</p>
+      <div class="callout">📌 A body in motion is called a <strong>moving body</strong>. If its dimensions are very small compared to the distances it travels, it is called a <strong>material point</strong>.</div>
+      <h3>Reference Frame</h3>
+      <p>The <strong>reference frame</strong> is a solid — a set of points fixed relative to each other — with respect to which a position or motion is determined. The <strong>coordinate system</strong> (O, i, j, k) makes it possible to quantify positions and velocities.</p>
+    </div>
+  `},
+  { unit:1, title:"Scalars vs Vectors", mins:6, content:`
+    <div class="lesson-unit-tag tag-u1">Unit 1</div>
+    <div class="lesson-title-lg">Scalars vs Vectors</div>
+    <div class="lesson-body">
+      <p>Every physical quantity in mechanics is either a <strong>scalar</strong> or a <strong>vector</strong>. Understanding the difference is critical.</p>
+      <div class="callout danger">⚠️ This is one of the most common sources of errors in exams!</div>
+      <table class="def-table">
+        <tr><th>Term</th><th>Definition</th><th>Unit / Type</th></tr>
+        <tr><td class="term">Distance (d)</td><td>Total path length travelled, regardless of direction</td><td>m — scalar</td></tr>
+        <tr><td class="term">Displacement (s)</td><td>Straight-line distance from start to end, including direction</td><td>m — vector</td></tr>
+        <tr><td class="term">Speed (v)</td><td>Distance per unit of time: v = d/t</td><td>m/s — scalar</td></tr>
+        <tr><td class="term">Velocity (v)</td><td>Displacement per unit of time, with direction: v = s/t</td><td>m/s — vector</td></tr>
+        <tr><td class="term">Acceleration (a)</td><td>Change in velocity per unit of time</td><td>m/s² — vector</td></tr>
+      </table>
+      <div class="callout tip">✅ Rule: if a quantity has a direction, it is a <strong>vector</strong>. If it only has a magnitude, it is a <strong>scalar</strong>.<br><br>Example — speed = 80 km/h (scalar) | velocity = 80 km/h North (vector)</div>
+    </div>
+  `},
+  { unit:1, title:"Velocity & Acceleration", mins:8, content:`
+    <div class="lesson-unit-tag tag-u1">Unit 1</div>
+    <div class="lesson-title-lg">Velocity & Acceleration</div>
+    <div class="lesson-body">
+      <h3>Average vs Instantaneous Velocity</h3>
+      <p><strong>Average speed</strong> is the total distance divided by the total time taken.</p>
+      <div class="formula-box"><span>Average Speed = Total Distance / Total Time</span><span class="formula-label">Formula</span></div>
+      <p>The <strong>instantaneous velocity vector V</strong> is at every instant tangent to the trajectory. Its direction is that of the motion. The magnitude (speed) is:</p>
+      <div class="formula-box"><span>v = √((V_x)² + (V_y)² + (V_z)²)</span><span class="formula-label">Magnitude</span></div>
+      <h3>The Acceleration Formula</h3>
+      <div class="formula-box"><span>a = (Vf − Vi) / t</span><span class="formula-label">Acceleration</span></div>
+      <table class="def-table">
+        <tr><th>Condition</th><th>Meaning</th></tr>
+        <tr><td class="term">a &gt; 0</td><td>Positive acceleration → object is speeding up</td></tr>
+        <tr><td class="term">a &lt; 0</td><td>Negative acceleration (deceleration) → slowing down</td></tr>
+        <tr><td class="term">a = 0</td><td>Constant velocity → uniform motion</td></tr>
+      </table>
+      <h3>Worked Example</h3>
+      <div class="callout info">🚗 A car increases from 10 m/s to 30 m/s in 8 seconds.<br><br>a = (30 − 10) / 8 = <strong>2.5 m/s²</strong> → the car is speeding up.</div>
+      <div class="callout danger">🚛 A lorry at 25 m/s stops in 10 seconds.<br><br>a = (0 − 25) / 10 = <strong>−2.5 m/s²</strong> → deceleration. The greater this value, the more violent the braking.</div>
+    </div>
+  `},
+  { unit:1, title:"Trajectories & Position Vectors", mins:7, content:`
+    <div class="lesson-unit-tag tag-u1">Unit 1</div>
+    <div class="lesson-title-lg">Trajectories & Position Vectors</div>
+    <div class="lesson-body">
+      <p>The <strong>trajectory</strong> is the set of successive positions occupied by a mobile over time.</p>
+      <table class="def-table">
+        <tr><th>Type</th><th>Trajectory</th><th>Equation</th></tr>
+        <tr><td class="term">Rectilinear</td><td>Straight line</td><td>y = ax + b</td></tr>
+        <tr><td class="term">Curvilinear</td><td>Any curve</td><td>y = ax² + bx + c</td></tr>
+        <tr><td class="term">Circular</td><td>Circle</td><td>(x−a)² + (y−b)² = c²</td></tr>
+      </table>
+      <h3>Position Vector</h3>
+      <p>The position of the mobile is defined in the coordinate system (O,i,j,k) by the <strong>position vector</strong>:</p>
+      <div class="formula-box"><span>OM = Xi + Yj + Zk</span><span class="formula-label">Position Vector</span></div>
+      <div class="formula-box"><span>|OM| = √(x² + y² + z²)</span><span class="formula-label">Magnitude</span></div>
+      <div class="callout">📌 If the mobile is <strong>at rest</strong>, coordinates (x, y, z) do not vary.<br>If in <strong>motion</strong>, the coordinates are functions of time: x(t), y(t), z(t) — these are called <strong>parametric equations of motion</strong>.</div>
+    </div>
+  `},
+  // UNIT 2
+  { unit:2, title:"Distance–Time Graphs", mins:8, content:`
+    <div class="lesson-unit-tag tag-u2">Unit 2</div>
+    <div class="lesson-title-lg">Distance–Time Graphs</div>
+    <div class="lesson-body">
+      <p>A <strong>distance-time graph (d–t)</strong> shows how far a body has travelled over time. Distance is on the y-axis; time is on the x-axis.</p>
+      <h3>Reading the Graph</h3>
+      <table class="def-table">
+        <tr><th>Shape</th><th>Motion</th></tr>
+        <tr><td class="term">Horizontal line</td><td>Body is stationary (at rest)</td></tr>
+        <tr><td class="term">Straight diagonal line</td><td>Uniform motion (constant speed)</td></tr>
+        <tr><td class="term">Concave upward curve</td><td>Accelerating (speed increasing)</td></tr>
+        <tr><td class="term">Concave downward curve</td><td>Decelerating (speed decreasing)</td></tr>
+      </table>
+      <h3>Key Rules</h3>
+      <div class="callout tip">✅ The <strong>slope (gradient)</strong> of a d–t graph equals the <strong>speed</strong> of the body.<br><br>Steeper slope → faster speed. A negative slope means the body is returning towards the start.</div>
+      <p>The slope of a straight-line d–t graph is constant regardless of the chosen interval — this means an object in uniform motion always moves at the same speed.</p>
+    </div>
+  `},
+  { unit:2, title:"Velocity–Time Graphs", mins:8, content:`
+    <div class="lesson-unit-tag tag-u2">Unit 2</div>
+    <div class="lesson-title-lg">Velocity–Time Graphs</div>
+    <div class="lesson-body">
+      <p>A <strong>velocity-time graph (v–t)</strong> has velocity on the vertical axis and time on the horizontal axis. It shows how velocity changes over time.</p>
+      <table class="def-table">
+        <tr><th>Shape</th><th>Meaning</th></tr>
+        <tr><td class="term">Flat horizontal line</td><td>Constant velocity (zero acceleration)</td></tr>
+        <tr><td class="term">Positive slope (rising)</td><td>Acceleration (speeding up)</td></tr>
+        <tr><td class="term">Negative slope (falling)</td><td>Deceleration (slowing down)</td></tr>
+        <tr><td class="term">Curve (concave up)</td><td>Increasing acceleration</td></tr>
+        <tr><td class="term">Curve (concave down)</td><td>Decreasing acceleration</td></tr>
+      </table>
+      <div class="callout info">📐 <strong>Gradient of v–t graph = Acceleration</strong><br><br>📐 <strong>Area under v–t graph = Distance travelled</strong></div>
+      <h3>Non-Uniform Acceleration</h3>
+      <p>Non-uniform acceleration means velocity changes by <em>unequal</em> amounts in equal time intervals — like a car in heavy traffic. The v–t graph will be a curve rather than a straight line.</p>
+    </div>
+  `},
+  { unit:2, title:"Acceleration–Time Graphs", mins:6, content:`
+    <div class="lesson-unit-tag tag-u2">Unit 2</div>
+    <div class="lesson-title-lg">Acceleration–Time Graphs</div>
+    <div class="lesson-body">
+      <p>An <strong>acceleration-time graph (a–t)</strong> has acceleration on the vertical axis and time on the horizontal axis.</p>
+      <table class="def-table">
+        <tr><th>Shape</th><th>Motion Type</th></tr>
+        <tr><td class="term">Horizontal flat line</td><td>Constant acceleration</td></tr>
+        <tr><td class="term">Straight rising line</td><td>Uniformly increasing acceleration</td></tr>
+        <tr><td class="term">Exponential curve</td><td>Non-uniformly accelerated body</td></tr>
+      </table>
+      <div class="callout tip">📐 <strong>Slope of a–t graph = Jerk</strong> (rate of change of acceleration, da/dt)<br><br>📐 <strong>Area under a–t graph = Change in velocity</strong></div>
+      <h3>The Calculus Connection</h3>
+      <div class="callout info">Displacement →<em> differentiate </em>→ Velocity →<em> differentiate </em>→ Acceleration<br><br>Acceleration →<em> integrate </em>→ Velocity →<em> integrate </em>→ Displacement</div>
+    </div>
+  `},
+  // UNIT 3
+  { unit:3, title:"Uniform Rectilinear Motion (URM)", mins:8, content:`
+    <div class="lesson-unit-tag tag-u3">Unit 3</div>
+    <div class="lesson-title-lg">Uniform Rectilinear Motion (URM)</div>
+    <div class="lesson-body">
+      <p>A mobile undergoes <strong>Uniform Rectilinear Motion (URM)</strong> if its trajectory is a straight line <em>and</em> its speed is constant.</p>
+      <div class="callout">🏍️ Imagine a motorcyclist on a straight road with the speedometer needle fixed at one graduation — this is URM.</div>
+      <h3>Equations of URM</h3>
+      <table class="def-table">
+        <tr><th>Quantity</th><th>In URM</th></tr>
+        <tr><td class="term">Velocity V</td><td>Constant — does not change with time</td></tr>
+        <tr><td class="term">Acceleration a</td><td>Zero (a = 0)</td></tr>
+        <tr><td class="term">Position x(t)</td><td>Linear function of time</td></tr>
+      </table>
+      <div class="formula-box"><span>x(t) = V · t + x₀</span><span class="formula-label">Position — URM</span></div>
+      <p>Where <strong>x₀</strong> is the initial position (position at t = 0) and <strong>V</strong> is the constant velocity.</p>
+      <div class="callout tip">📌 In URM: position is <strong>linear</strong> in time, velocity is <strong>constant</strong>, acceleration is <strong>zero</strong>.</div>
+    </div>
+  `},
+  { unit:3, title:"Uniformly Varied Rectilinear Motion (UVRM)", mins:10, content:`
+    <div class="lesson-unit-tag tag-u3">Unit 3</div>
+    <div class="lesson-title-lg">Uniformly Varied Rectilinear Motion</div>
+    <div class="lesson-body">
+      <p>A mobile undergoes <strong>UVRM</strong> if its trajectory is a straight line <em>and</em> its acceleration is constant (but non-zero).</p>
+      <div class="callout">🏍️ Imagine the motorcyclist's speedometer needle now moves — the speed changes at a constant rate. This is UVRM.</div>
+      <h3>The Three Key Equations</h3>
+      <div class="formula-box"><span>1. v(t) = at + v₀</span><span class="formula-label">Velocity–Time</span></div>
+      <div class="formula-box"><span>2. x(t) = ½at² + v₀t + x₀</span><span class="formula-label">Position–Time</span></div>
+      <div class="formula-box"><span>3. v² − v₀² = 2a(x − x₀)</span><span class="formula-label">Time-Independent</span></div>
+      <table class="def-table">
+        <tr><th>Symbol</th><th>Meaning</th></tr>
+        <tr><td class="term">a</td><td>Constant acceleration (m/s²)</td></tr>
+        <tr><td class="term">v₀</td><td>Initial velocity (m/s)</td></tr>
+        <tr><td class="term">v</td><td>Final velocity (m/s)</td></tr>
+        <tr><td class="term">x₀</td><td>Initial position (m)</td></tr>
+        <tr><td class="term">x</td><td>Final position (m)</td></tr>
+        <tr><td class="term">t</td><td>Time elapsed (s)</td></tr>
+      </table>
+      <div class="callout tip">📌 In UVRM: position is <strong>quadratic</strong> in time, velocity is <strong>linear</strong> in time, acceleration is <strong>constant</strong>.</div>
+    </div>
+  `},
+  { unit:3, title:"Applying the Equations", mins:10, content:`
+    <div class="lesson-unit-tag tag-u3">Unit 3</div>
+    <div class="lesson-title-lg">Applying the Equations</div>
+    <div class="lesson-body">
+      <h3>Which equation to use?</h3>
+      <table class="def-table">
+        <tr><th>You know...</th><th>You want...</th><th>Use</th></tr>
+        <tr><td>a, t, v₀</td><td>v</td><td>v = at + v₀</td></tr>
+        <tr><td>a, t, v₀, x₀</td><td>x</td><td>x = ½at² + v₀t + x₀</td></tr>
+        <tr><td>a, v, v₀, x₀</td><td>x (no t)</td><td>v² − v₀² = 2a(x−x₀)</td></tr>
+      </table>
+      <h3>Worked Examples</h3>
+      <div class="callout info">🚗 <strong>Example 1:</strong> A car starts from rest (v₀ = 0) and accelerates at 3 m/s² for 5 s.<br><br>v = 3 × 5 + 0 = <strong>15 m/s</strong><br>x = ½ × 3 × 25 + 0 = <strong>37.5 m</strong></div>
+      <div class="callout danger">🛑 <strong>Example 2:</strong> A car at 20 m/s brakes at −4 m/s². How far before stopping?<br><br>v² − v₀² = 2a(x − x₀)<br>0 − 400 = 2 × (−4) × (x − 0)<br>x = 400/8 = <strong>50 m</strong></div>
+      <div class="callout tip">🏆 <strong>Road Safety Link:</strong> Stopping distance = thinking distance + braking distance. UVRM equations help calculate safe following distances at any speed.</div>
+    </div>
+  `},
+];
+
+const flashcards = [
+  { unit:1, q:"What is mechanics?", a:"A branch of physics that studies the motion of bodies and the forces acting upon them." },
+  { unit:1, q:"What is kinematics?", a:"The study of motion independent of the causes that produce it." },
+  { unit:1, q:"What is a material point?", a:"A moving body whose dimensions are very small compared to the distances it travels." },
+  { unit:1, q:"What is the difference between speed and velocity?", a:"Speed is a scalar (magnitude only); velocity is a vector (magnitude + direction)." },
+  { unit:1, q:"Formula for acceleration?", a:"a = (Vf − Vi) / t" },
+  { unit:1, q:"What does a > 0 mean physically?", a:"The object is speeding up (positive acceleration)." },
+  { unit:1, q:"What does a < 0 mean physically?", a:"The object is slowing down (deceleration)." },
+  { unit:1, q:"What does a = 0 mean physically?", a:"The object moves at constant velocity (uniform motion)." },
+  { unit:1, q:"What is the position vector formula?", a:"OM = xi + yj + zk; |OM| = √(x² + y² + z²)" },
+  { unit:1, q:"What are parametric equations of motion?", a:"The evolution of position coordinates (x(t), y(t), z(t)) as functions of time." },
+  { unit:2, q:"What does the slope of a d–t graph represent?", a:"The speed of the body." },
+  { unit:2, q:"On a d–t graph, what does a horizontal line mean?", a:"The body is stationary (at rest)." },
+  { unit:2, q:"On a d–t graph, what does a straight diagonal line mean?", a:"The body moves at constant (uniform) speed." },
+  { unit:2, q:"On a d–t graph, what does a concave upward curve mean?", a:"The body is accelerating (speed increasing)." },
+  { unit:2, q:"What does the slope of a v–t graph give?", a:"Acceleration." },
+  { unit:2, q:"What does the area under a v–t graph represent?", a:"Distance (displacement) travelled." },
+  { unit:2, q:"On a v–t graph, what does a flat horizontal line mean?", a:"Constant velocity — zero acceleration." },
+  { unit:2, q:"What is non-uniform acceleration?", a:"Velocity changes by unequal amounts in equal time intervals (e.g. a car in traffic)." },
+  { unit:2, q:"What does the area under an a–t graph give?", a:"The change in velocity." },
+  { unit:2, q:"How do displacement, velocity, and acceleration relate mathematically?", a:"Velocity = derivative of displacement; Acceleration = derivative of velocity. Integration goes the other way." },
+  { unit:3, q:"Define Uniform Rectilinear Motion (URM).", a:"A mobile with a straight-line trajectory and constant speed." },
+  { unit:3, q:"What is the position equation for URM?", a:"x(t) = V · t + x₀" },
+  { unit:3, q:"What is the acceleration in URM?", a:"Zero (a = 0)." },
+  { unit:3, q:"Define UVRM.", a:"A mobile with a straight-line trajectory and constant (non-zero) acceleration." },
+  { unit:3, q:"What is the velocity-time equation in UVRM?", a:"v(t) = at + v₀" },
+  { unit:3, q:"What is the position-time equation in UVRM?", a:"x(t) = ½at² + v₀t + x₀" },
+  { unit:3, q:"What is the time-independent equation of motion?", a:"v² − v₀² = 2a(x − x₀)" },
+  { unit:3, q:"In UVRM, position is a _____ function of time.", a:"Second-degree (quadratic) function." },
+  { unit:3, q:"In UVRM, velocity is a _____ function of time.", a:"Linear function." },
+  { unit:3, q:"A car starts from rest, accelerates at 3 m/s² for 5 s. Find the final velocity.", a:"v = at + v₀ = 3×5 + 0 = 15 m/s" },
+];
+
+const quizQuestions = [
+  { unit:1, q:"Distance is a _____ quantity.", opts:["Vector","Scalar","Complex","Directional"], ans:1 },
+  { unit:1, q:"Displacement is a _____ quantity.", opts:["Scalar","Complex","Vector","Relative"], ans:2 },
+  { unit:1, q:"The formula for acceleration is:", opts:["a = Vf × Vi / t","a = (Vf + Vi) / t","a = (Vf − Vi) / t","a = Vi / Vf"], ans:2 },
+  { unit:1, q:"A car goes from 10 m/s to 30 m/s in 8 s. Acceleration?", opts:["4 m/s²","5 m/s²","2.5 m/s²","3 m/s²"], ans:2 },
+  { unit:1, q:"When a = 0 the object has:", opts:["Zero velocity","Constant velocity","Negative velocity","Increasing velocity"], ans:1 },
+  { unit:1, q:"The trajectory equation y = ax² + bx + c represents:", opts:["A straight line","A circle","A parabola","A spiral"], ans:2 },
+  { unit:2, q:"The slope of a d–t graph equals:", opts:["Acceleration","Force","Speed","Displacement"], ans:2 },
+  { unit:2, q:"On a d–t graph, a horizontal line means:", opts:["Uniform speed","Stationary body","Acceleration","Deceleration"], ans:1 },
+  { unit:2, q:"The area under a v–t graph gives:", opts:["Acceleration","Speed","Distance travelled","Force"], ans:2 },
+  { unit:2, q:"On a v–t graph, a negative gradient means:", opts:["Acceleration","Deceleration","Constant speed","Circular motion"], ans:1 },
+  { unit:3, q:"In URM, acceleration is:", opts:["Constant","Zero","Negative","Increasing"], ans:1 },
+  { unit:3, q:"The position equation in URM is:", opts:["x = ½at²","x = Vt + x₀","x = ½at² + v₀t","x = at"], ans:1 },
+  { unit:3, q:"The velocity equation in UVRM is:", opts:["V = x₀ + at","V = at + V₀","V = ½at² + V₀","V = V₀/t"], ans:1 },
+  { unit:3, q:"The time-independent equation is:", opts:["V²+V₀²=2a(x−x₀)","V−V₀=at","V²−V₀²=2a(x−x₀)","x=½at²"], ans:2 },
+  { unit:3, q:"In UVRM, position is a _____ function of time.", opts:["Linear","Constant","Cubic","Quadratic"], ans:3 },
+];
+
+// ===================== STATE =====================
+const S = {
+  lessonIdx: 0,
+  lessonsDone: new Set(),
+  flashIdx: 0,
+  flashFilter: 'all',
+  flashFlipped: false,
+  flashResults: {},  // idx -> 'known' or 'again'
+  flashReviewed: 0,
+  flashFilteredList: [],
+  quizState: {},
+  quizCorrect: 0,
+  quizWrong: 0,
+  quizAnswered: 0,
+  quizTimerSecs: 0,
+  quizTimerInt: null,
+  xp: 0,
+  bestQuiz: 0,
+  activity: [],
+  quizScoresByUnit: {1:[],2:[],3:[]},
+};
+
+function addXP(n) {
+  S.xp += n;
+  document.getElementById('xpBadge').textContent = S.xp + ' XP';
+  document.getElementById('homeXP').textContent = S.xp;
+}
+
+function logActivity(icon, cls, text) {
+  S.activity.unshift({ icon, cls, text, time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) });
+  if (S.activity.length > 8) S.activity.pop();
+  renderActivity();
+}
+
+function renderActivity() {
+  const el = document.getElementById('activityLog');
+  if (!S.activity.length) { el.innerHTML = '<div style="color:var(--muted);font-size:0.82rem">No activity yet.</div>'; return; }
+  el.innerHTML = S.activity.map(a => `
+    <div class="act-item">
+      <div class="act-icon ${a.cls}">${a.icon}</div>
+      <div class="act-text">${a.text}</div>
+      <div class="act-time">${a.time}</div>
+    </div>`).join('');
+}
+
+// ===================== NAVIGATION =====================
+function goto(screen, lessonStart) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('screen-' + screen).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    if (t.textContent.toLowerCase().includes(screen === 'home' ? '🏠' : screen === 'lessons' ? '📖' : screen === 'flash' ? '🃏' : screen === 'quiz' ? '✏️' : '📊')) {
+      t.classList.add('active');
+    }
+  });
+  // match by onclick
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    if (t.getAttribute('onclick') === `goto('${screen}')` || t.getAttribute('onclick') === `goto('${screen}',${lessonStart})`) t.classList.add('active');
+  });
+
+  if (screen === 'lessons') { buildSidebar(); showLesson(lessonStart !== undefined ? lessonStart : S.lessonIdx); }
+  if (screen === 'flash') { buildFlash(); }
+  if (screen === 'quiz') { buildQuiz(); }
+  if (screen === 'progress') { renderProgress(); }
+  if (screen === 'home') { updateHome(); }
+}
+
+// Fix nav active
+document.querySelectorAll('.nav-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+// ===================== HOME =====================
+function updateHome() {
+  document.getElementById('homeLessons').textContent = S.lessonsDone.size + '/' + lessons.length;
+  document.getElementById('homeFlash').textContent = S.flashReviewed;
+  document.getElementById('homeQuiz').textContent = S.bestQuiz + '%';
+  document.getElementById('homeXP').textContent = S.xp;
+
+  const u1done = [...S.lessonsDone].filter(i => lessons[i].unit === 1).length;
+  const u2done = [...S.lessonsDone].filter(i => lessons[i].unit === 2).length;
+  const u3done = [...S.lessonsDone].filter(i => lessons[i].unit === 3).length;
+  const u1total = lessons.filter(l => l.unit===1).length;
+  const u2total = lessons.filter(l => l.unit===2).length;
+  const u3total = lessons.filter(l => l.unit===3).length;
+
+  document.getElementById('bar1').style.width = (u1done/u1total*100) + '%';
+  document.getElementById('bar2').style.width = (u2done/u2total*100) + '%';
+  document.getElementById('bar3').style.width = (u3done/u3total*100) + '%';
+}
+
+// ===================== LESSONS =====================
+function buildSidebar() {
+  const sb = document.getElementById('lessonSidebar');
+  const units = [1,2,3];
+  const uNames = {1:'Unit 1 — Describing Motion', 2:'Unit 2 — Motion Graphs', 3:'Unit 3 — Equations'};
+  sb.innerHTML = '';
+  units.forEach(u => {
+    const sec = document.createElement('div');
+    sec.className = 'sidebar-section';
+    sec.innerHTML = `<div class="sidebar-label">${uNames[u]}</div>`;
+    const uLessons = lessons.map((l,i)=>({...l,i})).filter(l=>l.unit===u);
+    uLessons.forEach(l => {
+      const done = S.lessonsDone.has(l.i);
+      const active = S.lessonIdx === l.i;
+      sec.innerHTML += `
+        <div class="lesson-item ${done?'done':''} ${active?'active':''}" onclick="showLesson(${l.i})" id="litem-${l.i}">
+          <div class="lesson-dot">${done?'✓':l.i+1}</div>
+          <div class="lesson-info">
+            <div class="lesson-title-sm">${l.title}</div>
+            <div class="lesson-meta">${l.mins} min read</div>
+          </div>
+        </div>`;
+    });
+    sb.appendChild(sec);
+  });
+}
+
+function showLesson(idx) {
+  S.lessonIdx = idx;
+  const l = lessons[idx];
+  const content = document.getElementById('lessonContent');
+  const prevDone = idx > 0;
+  const nextExists = idx < lessons.length - 1;
+
+  content.innerHTML = `
+    <div class="lesson-header">${l.content}</div>
+    <div class="lesson-nav">
+      <button class="btn" onclick="showLesson(${idx-1})" ${idx===0?'disabled':''}>← Previous</button>
+      <button class="btn primary" onclick="completeLesson(${idx})" id="completeBtn-${idx}">
+        ${S.lessonsDone.has(idx) ? '✓ Completed' : 'Mark Complete ✓'}
+      </button>
+      <button class="btn" onclick="showLesson(${idx+1})" ${!nextExists?'disabled':''}>Next →</button>
+    </div>`;
+
+  buildSidebar();
+}
+
+function completeLesson(idx) {
+  if (!S.lessonsDone.has(idx)) {
+    S.lessonsDone.add(idx);
+    addXP(20);
+    logActivity('📖', 'lesson', `Completed: ${lessons[idx].title}`);
+  }
+  document.getElementById(`completeBtn-${idx}`).textContent = '✓ Completed';
+  buildSidebar();
+  updateHome();
+}
+
+// ===================== FLASHCARDS =====================
+function getFilteredCards() {
+  if (S.flashFilter === 'all') return flashcards.map((c,i)=>i);
+  return flashcards.map((c,i)=>i).filter(i => flashcards[i].unit === S.flashFilter);
+}
+
+function buildFlash() {
+  S.flashFilteredList = getFilteredCards();
+  S.flashIdx = 0;
+  S.flashResults = {};
+  S.flashFlipped = false;
+  showFlashCard();
+  buildFlashDots();
+}
+
+function setFlashFilter(val, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  S.flashFilter = val;
+  buildFlash();
+}
+
+function showFlashCard() {
+  const list = S.flashFilteredList;
+  if (!list.length) return;
+  const idx = list[S.flashIdx];
+  const card = flashcards[idx];
+  const colors = {1:'var(--u1)', 2:'var(--u2)', 3:'var(--u3)'};
+
+  document.getElementById('cardQuestion').textContent = card.q;
+  document.getElementById('cardAnswer').textContent = card.a;
+  document.getElementById('cardDot').style.background = colors[card.unit];
+  document.getElementById('flashCounter').textContent = `Card ${S.flashIdx+1} of ${list.length}`;
+  document.getElementById('flashCard').classList.remove('flipped');
+  document.getElementById('flashActions').style.display = 'none';
+  document.getElementById('flashFlipHint').style.display = 'flex';
+  S.flashFlipped = false;
+  buildFlashDots();
+}
+
+function flipCard() {
+  if (S.flashFlipped) return;
+  document.getElementById('flashCard').classList.add('flipped');
+  document.getElementById('flashActions').style.display = 'flex';
+  document.getElementById('flashFlipHint').style.display = 'none';
+  S.flashFlipped = true;
+}
+
+function rateCard(rating) {
+  const list = S.flashFilteredList;
+  const idx = list[S.flashIdx];
+  S.flashResults[S.flashIdx] = rating;
+  S.flashReviewed++;
+  document.getElementById('homeFlash').textContent = S.flashReviewed;
+
+  if (rating === 'known') addXP(5);
+  logActivity('🃏', 'flash', `Reviewed: "${flashcards[idx].q.substring(0,40)}..."`);
+
+  buildFlashDots();
+
+  if (S.flashIdx < list.length - 1) {
+    S.flashIdx++;
+    setTimeout(showFlashCard, 200);
+  } else {
+    // Done
+    const known = Object.values(S.flashResults).filter(r=>r==='known').length;
+    document.getElementById('cardQuestion').textContent = `🎉 Done! ${known}/${list.length} cards mastered.`;
+    document.getElementById('cardAnswer').textContent = 'Review again to improve!';
+    document.getElementById('flashActions').style.display = 'none';
+    document.getElementById('flashFlipHint').style.display = 'none';
+    addXP(10);
+  }
+}
+
+function buildFlashDots() {
+  const list = S.flashFilteredList;
+  const el = document.getElementById('flashDots');
+  el.innerHTML = list.map((_, i) => {
+    let cls = '';
+    if (i === S.flashIdx) cls = 'current';
+    else if (S.flashResults[i] === 'known') cls = 'known';
+    else if (S.flashResults[i] === 'again') cls = 'again';
+    return `<div class="fp-dot ${cls}"></div>`;
+  }).join('');
+}
+
+// ===================== QUIZ =====================
+function buildQuiz() {
+  S.quizState = {};
+  S.quizCorrect = 0;
+  S.quizWrong = 0;
+  S.quizAnswered = 0;
+  S.quizTimerSecs = 0;
+  clearInterval(S.quizTimerInt);
+
+  document.getElementById('quizResult').classList.remove('show');
+  document.getElementById('quizSubmitWrap').style.display = 'block';
+
+  // Shuffle and pick 15 questions
+  const shuffled = [...quizQuestions].sort(() => Math.random() - 0.5);
+  S.currentQuiz = shuffled;
+
+  renderQuizBody();
+  updateQuizProgress();
+
+  S.quizTimerInt = setInterval(() => {
+    S.quizTimerSecs++;
+    const m = Math.floor(S.quizTimerSecs/60).toString().padStart(2,'0');
+    const s = (S.quizTimerSecs%60).toString().padStart(2,'0');
+    document.getElementById('quizTimer').textContent = m + ':' + s;
+  }, 1000);
+}
+
+function renderQuizBody() {
+  const body = document.getElementById('quizBody');
+  const letters = ['A','B','C','D'];
+  body.innerHTML = S.currentQuiz.map((q,i) => `
+    <div class="qcard" id="qcard-${i}">
+      <div class="qcard-num">Q${i+1} · Unit ${q.unit}</div>
+      <div class="qcard-q">${q.q}</div>
+      <div class="q-opts">
+        ${q.opts.map((o,j) => `
+          <button class="q-opt" id="qopt-${i}-${j}" onclick="answerQuiz(${i},${j})">
+            <span class="opt-letter">${letters[j]}</span>${o}
+          </button>`).join('')}
+      </div>
+      <div class="q-feedback" id="qfb-${i}"></div>
+    </div>`).join('');
+}
+
+function answerQuiz(qi, chosen) {
+  if (S.quizState[qi] !== undefined) return;
+  const q = S.currentQuiz[qi];
+  const correct = chosen === q.ans;
+  S.quizState[qi] = correct ? 'correct' : 'wrong';
+  S.quizAnswered++;
+
+  for (let j = 0; j < q.opts.length; j++) {
+    const btn = document.getElementById(`qopt-${qi}-${j}`);
+    btn.disabled = true;
+    if (j === q.ans) btn.classList.add(correct && j === chosen ? 'correct' : 'reveal');
+    if (j === chosen && !correct) btn.classList.add('wrong');
+  }
+  if (correct) {
+    S.quizCorrect++;
+    if (correct && chosen === q.ans) {
+      document.getElementById(`qopt-${qi}-${q.ans}`).classList.remove('reveal');
+      document.getElementById(`qopt-${qi}-${q.ans}`).classList.add('correct');
+    }
+    const fb = document.getElementById(`qfb-${qi}`);
+    fb.textContent = '✓ Correct!';
+    fb.className = 'q-feedback show ok';
+  } else {
+    S.quizWrong++;
+    const fb = document.getElementById(`qfb-${qi}`);
+    fb.textContent = `✗ Wrong — Correct: ${q.opts[q.ans]}`;
+    fb.className = 'q-feedback show err';
+  }
+  updateQuizProgress();
+}
+
+function updateQuizProgress() {
+  const pct = (S.quizAnswered / S.currentQuiz.length) * 100;
+  document.getElementById('quizFill').style.width = pct + '%';
+}
+
+function showQuizResult() {
+  clearInterval(S.quizTimerInt);
+  const total = S.currentQuiz.length;
+  const pct = Math.round((S.quizCorrect / total) * 100);
+  S.bestQuiz = Math.max(S.bestQuiz, pct);
+
+  // Log by unit
+  S.currentQuiz.forEach((q,i) => {
+    if (S.quizState[i] !== undefined) {
+      S.quizScoresByUnit[q.unit].push(S.quizState[i] === 'correct' ? 1 : 0);
+    }
+  });
+
+  document.getElementById('qrScore').textContent = pct + '%';
+  document.getElementById('qrCorrect').textContent = S.quizCorrect;
+  document.getElementById('qrWrong').textContent = S.quizWrong;
+  const m = Math.floor(S.quizTimerSecs/60).toString().padStart(2,'0');
+  const s = (S.quizTimerSecs%60).toString().padStart(2,'0');
+  document.getElementById('qrTime').textContent = m + ':' + s;
+
+  let emoji, title, sub;
+  if (pct>=90){emoji='🏆';title='Outstanding!';sub='You have mastered this material!';}
+  else if(pct>=75){emoji='🎯';title='Great work!';sub='Strong understanding — keep it up.';}
+  else if(pct>=60){emoji='📚';title='Good effort!';sub='A little more review and you\'ll ace it.';}
+  else{emoji='💪';title='Keep going!';sub='Re-read the lessons and try again.';}
+
+  document.getElementById('qrEmoji').textContent = emoji;
+  document.getElementById('qrTitle').textContent = title;
+  document.getElementById('qrSub').textContent = sub;
+  document.getElementById('quizResult').classList.add('show');
+  document.getElementById('quizSubmitWrap').style.display = 'none';
+
+  addXP(pct >= 60 ? 30 : 10);
+  logActivity('✏️', 'quiz', `Quiz completed: ${pct}% (${S.quizCorrect}/${total} correct)`);
+  updateHome();
+}
+
+function restartQuiz() {
+  document.getElementById('quizResult').classList.remove('show');
+  buildQuiz();
+}
+
+// ===================== PROGRESS =====================
+function renderProgress() {
+  const uLessons = u => lessons.filter(l=>l.unit===u).length;
+  const uDone = u => [...S.lessonsDone].filter(i=>lessons[i].unit===u).length;
+
+  [1,2,3].forEach(u => {
+    const done = uDone(u);
+    const total = uLessons(u);
+    const pct = total ? Math.round(done/total*100) : 0;
+    const circ = 232;
+    const offset = circ - (circ * pct / 100);
+    document.getElementById(`ring${u}`).style.strokeDashoffset = offset;
+    document.getElementById(`ring${u}pct`).textContent = pct + '%';
+    document.getElementById(`pd${u}l`).textContent = `${done}/${total}`;
+  });
+
+  // Cards reviewed per unit (rough)
+  document.getElementById('pd1c').textContent = Object.entries(S.flashResults).filter(([i]) => flashcards[S.flashFilteredList[i]]?.unit===1).length;
+  document.getElementById('pd2c').textContent = Object.entries(S.flashResults).filter(([i]) => flashcards[S.flashFilteredList[i]]?.unit===2).length;
+  document.getElementById('pd3c').textContent = Object.entries(S.flashResults).filter(([i]) => flashcards[S.flashFilteredList[i]]?.unit===3).length;
+
+  // Quiz avg per unit
+  [1,2,3].forEach(u => {
+    const scores = S.quizScoresByUnit[u];
+    const el = document.getElementById(`pd${u}q`);
+    el.textContent = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length*100)+'%' : '—';
+  });
+
+  // Mastery topics
+  const topics = [
+    { label:'Scalars & Vectors', unit:1, pct: S.lessonsDone.has(1) ? 90 : S.lessonsDone.has(0) ? 40 : 0 },
+    { label:'Velocity & Acceleration', unit:1, pct: S.lessonsDone.has(2) ? 85 : 0 },
+    { label:'Trajectories', unit:1, pct: S.lessonsDone.has(3) ? 80 : 0 },
+    { label:'d–t Graphs', unit:2, pct: S.lessonsDone.has(4) ? 88 : 0 },
+    { label:'v–t Graphs', unit:2, pct: S.lessonsDone.has(5) ? 85 : 0 },
+    { label:'a–t Graphs', unit:2, pct: S.lessonsDone.has(6) ? 80 : 0 },
+    { label:'URM Equations', unit:3, pct: S.lessonsDone.has(7) ? 90 : 0 },
+    { label:'UVRM Equations', unit:3, pct: S.lessonsDone.has(8) ? 85 : 0 },
+    { label:'Applying Equations', unit:3, pct: S.lessonsDone.has(9) ? 80 : 0 },
+  ];
+  const colors = {1:'var(--u1)', 2:'var(--u2)', 3:'var(--u3)'};
+  document.getElementById('masteryList').innerHTML = topics.map(t => `
+    <div class="mastery-topic">
+      <div class="mastery-label">${t.label}</div>
+      <div class="mastery-bar-wrap"><div class="mastery-bar" style="width:${t.pct}%;background:${colors[t.unit]}"></div></div>
+      <div class="mastery-pct">${t.pct}%</div>
+    </div>`).join('');
+
+  renderActivity();
+}
+
+// Init
+updateHome();
+</script>
+</body>
+</html>
